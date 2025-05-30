@@ -83,33 +83,38 @@ function getScriptPath() {
     }
 }
 
-// Main function to process SVG files
+// Main function to process any image files
 function main() {
     var scriptPath = getScriptPath();
-    var svgsFolder = Folder(scriptPath + "/svgs");
-    var styledSvgsFolder = Folder(scriptPath + "/styledSvgs");
+    var inputFolder = Folder(scriptPath + "/svgs");
+    var styledFolder = Folder(scriptPath + "/styledSvgs");
 
-    // Create styledSvgs folder if it doesn't exist
-    if (!styledSvgsFolder.exists) {
-        styledSvgsFolder.create();
+    // Create styled folder if it doesn't exist
+    if (!styledFolder.exists) {
+        styledFolder.create();
     }
 
-    if (!svgsFolder.exists) {
-        alert("Error: 'svgs' folder not found in the script's directory.");
+    if (!inputFolder.exists) {
+        alert("Error: 'input' folder not found in the script's directory.");
         return;
     }
 
-    var svgFiles = svgsFolder.getFiles("*.svg");
+    // Get all image files (common formats supported by Photoshop)
+    var imageFiles = inputFolder.getFiles(function(file) {
+        if (file instanceof Folder) return false;
+        var name = file.name.toLowerCase();
+        return name.match(/\.(svg|png|jpg|jpeg|gif|bmp|tiff|tif|psd|ai|eps|pdf)$/);
+    });
 
-    if (svgFiles.length === 0) {
-        alert("No SVG files found in the 'svgs' folder.");
+    if (imageFiles.length === 0) {
+        alert("No supported image files found in the 'input' folder.");
         return;
     }
 
-    for (var i = 0; i < svgFiles.length; i++) {
-        var svgFile = svgFiles[i];
+    for (var i = 0; i < imageFiles.length; i++) {
+        var imageFile = imageFiles[i];
         try {
-            var doc = app.open(svgFile);
+            var doc = app.open(imageFile);
 
             // Process layers
             if (doc.artLayers.length > 0) {
@@ -139,15 +144,17 @@ function main() {
             // Save the processed file
             var saveOptions = new PNGSaveOptions();
             saveOptions.compression = 9; 
-            var saveFile = File(styledSvgsFolder + "/" + svgFile.name.replace(/\\.svg$/i, ".png"));
+            // Get the base name without extension and add .png
+            var baseName = imageFile.name.replace(/\.[^\.]+$/, "");
+            var saveFile = File(styledFolder + "/" + baseName + ".png");
             doc.saveAs(saveFile, saveOptions, true, Extension.LOWERCASE);
             doc.close(SaveOptions.DONOTSAVECHANGES);
 
         } catch (e) {
-            alert("Error processing file " + svgFile.name + ": " + e.message);
+            alert("Error processing file " + imageFile.name + ": " + e.message);
         }
     }
-    alert("SVG processing complete. Styled SVGs saved in 'styledSvgs' folder.");
+    alert("Image processing complete. Styled images saved in 'styled' folder.");
 }
 
 // Run the main function 
