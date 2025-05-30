@@ -11,23 +11,24 @@ if (!fs.existsSync(downloadDir)) {
 // Read the images links JSON file
 const imageLinksData = JSON.parse(fs.readFileSync('images_links.json', 'utf8'));
 
-// Filter only SVG files
-const svgUrls = imageLinksData.filter((url) =>
-  url.toLowerCase().endsWith('.svg')
-);
+// Use all URLs (no filtering by file type)
+const fileUrls = imageLinksData;
 
-console.log(
-  `Found ${svgUrls.length} SVG files to download out of ${imageLinksData.length} total files.`
-);
+console.log(`Found ${fileUrls.length} files to download.`);
 
 // Function to extract filename from URL
 function getFilenameFromUrl(url) {
   const urlParts = url.split('/');
   let filename = urlParts[urlParts.length - 1];
 
-  // Remove duplicate extensions if any (like .svg.svg)
-  if (filename.endsWith('.svg.svg')) {
-    filename = filename.replace('.svg.svg', '.svg');
+  // Remove duplicate extensions if any
+  const extensionMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
+  if (extensionMatch) {
+    const extension = extensionMatch[1];
+    const duplicatePattern = new RegExp(`\\.${extension}\\.${extension}$`);
+    if (duplicatePattern.test(filename)) {
+      filename = filename.replace(duplicatePattern, `.${extension}`);
+    }
   }
 
   // Clean up URL encoding
@@ -74,17 +75,17 @@ function downloadFile(url, filename) {
   });
 }
 
-// Download all SVG files with concurrency control
-async function downloadAllSvgs() {
+// Download all files with concurrency control
+async function downloadAllFiles() {
   const maxConcurrentDownloads = 5; // Limit concurrent downloads to avoid overwhelming the server
   let downloadedCount = 0;
   let failedCount = 0;
 
-  console.log(`Starting download of ${svgUrls.length} SVG files...`);
+  console.log(`Starting download of ${fileUrls.length} files...`);
   console.log('='.repeat(50));
 
-  for (let i = 0; i < svgUrls.length; i += maxConcurrentDownloads) {
-    const batch = svgUrls.slice(i, i + maxConcurrentDownloads);
+  for (let i = 0; i < fileUrls.length; i += maxConcurrentDownloads) {
+    const batch = fileUrls.slice(i, i + maxConcurrentDownloads);
     const promises = batch.map(async (url) => {
       try {
         const filename = getFilenameFromUrl(url);
@@ -100,8 +101,8 @@ async function downloadAllSvgs() {
     await Promise.all(promises);
 
     // Show progress
-    const processed = Math.min(i + maxConcurrentDownloads, svgUrls.length);
-    console.log(`Progress: ${processed}/${svgUrls.length} files processed`);
+    const processed = Math.min(i + maxConcurrentDownloads, fileUrls.length);
+    console.log(`Progress: ${processed}/${fileUrls.length} files processed`);
   }
 
   console.log('='.repeat(50));
@@ -112,4 +113,4 @@ async function downloadAllSvgs() {
 }
 
 // Start the download process
-downloadAllSvgs().catch(console.error);
+downloadAllFiles().catch(console.error);
