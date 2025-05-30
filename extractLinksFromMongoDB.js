@@ -8,6 +8,13 @@ const MONGO_URI =
 const DATABASE_NAME = 'cactus'; // Update with your database name
 const COLLECTION_NAME = 'products';
 
+const DOWNLOAD_AMOUNT = {
+  ALL: 'all',
+  FEW: 2,
+};
+
+const NUMBER_OF_DOCUMENTS_TO_EXTRACT_LINKS = DOWNLOAD_AMOUNT.FEW;
+
 // Function to recursively extract HTTPS URLs from nested objects
 function extractHttpsUrls(obj, currentPath = '') {
   const httpsUrls = {};
