@@ -21,18 +21,30 @@ function getFilenameFromUrl(url) {
   const urlParts = url.split('/');
   let filename = urlParts[urlParts.length - 1];
 
-  // Remove duplicate extensions if any
-  const extensionMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
+  // Clean up URL encoding first
+  filename = decodeURIComponent(filename);
+
+  // Find the actual file extension and remove everything after it
+  // Look for common file extensions
+  const extensionMatch = filename.match(
+    /\.(svg|png|jpg|jpeg|gif|webp|ico|pdf|eps|ai|psd)/i
+  );
   if (extensionMatch) {
-    const extension = extensionMatch[1];
+    const extensionIndex = filename.indexOf(extensionMatch[0]);
+    const extension = extensionMatch[0];
+    // Keep only the part up to and including the extension
+    filename = filename.substring(0, extensionIndex + extension.length);
+  }
+
+  // Remove duplicate extensions if any (keep this logic for safety)
+  const finalExtensionMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
+  if (finalExtensionMatch) {
+    const extension = finalExtensionMatch[1];
     const duplicatePattern = new RegExp(`\\.${extension}\\.${extension}$`);
     if (duplicatePattern.test(filename)) {
       filename = filename.replace(duplicatePattern, `.${extension}`);
     }
   }
-
-  // Clean up URL encoding
-  filename = decodeURIComponent(filename);
 
   // Replace invalid characters for filesystem
   filename = filename.replace(/[<>:"/\\|?*]/g, '_');

@@ -1,0 +1,23 @@
+{
+  "name": "svg_filter",
+  "version": "1.0.0",
+  "main": "extractLinksFromMongoDB.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MudassserRasool/Svg_Filter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MudassserRasool/Svg_Filter/issues"
+  },
+  "homepage": "https://github.com/MudassserRasool/Svg_Filter#readme",
+  "description": "",
+  "dependencies": {
+    "mongoose": "^8.15.1"
+  }
+}
