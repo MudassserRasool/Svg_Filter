@@ -1,12 +1,66 @@
 [
   {
-    "fileName": "file1.svg",
-    "stylization": 100,
-    "cleanliness": 100,
-    "brushScale": 100,
-    "microBrush": 100,
-    "lightingOn": 100,
-    "lightDirection": 100,
-    "specularity": 100
+    "fileNames": [
+      "10272-Artboard 9.svg",
+      "file3.svg",
+      "file4.svg"
+    ],
+    "filterStyles": {
+      "stylization": 6.0,
+      "cleanliness": 8.2,
+      "brushScale": 6.7,
+      "microBrush": 0.6,
+      "lightingOn": true,
+      "lightDirection": -60,
+      "specularity": 1.5
+    }
+  }
+  {
+    "fileNames": [
+      "10272-Artboard 9-2.svg",
+      "file3.svg",
+      "file4.svg"
+    ],
+    "filterStyles": {
+      "stylization": 1.2,
+      "cleanliness": 6.0,
+      "brushScale": 0.1,
+      "microBrush": 5.2,
+      "lightingOn": true,
+      "lightDirection": -60,
+      "specularity": 1.5
+    }
+  }
+  {
+    "fileNames": [
+      "homme en blanc avec barbe09skin3blonde0.svg",
+      "file3.svg",
+      "file4.svg"
+    ],
+    "filterStyles": {
+      "stylization": 1.2,
+      "cleanliness": 6.0,
+      "brushScale": 0.1,
+      "microBrush": 5.2,
+      "lightingOn": true,
+      "lightDirection": -60,
+      "specularity": 1.5
+    }
+  }
+  {
+    "fileNames": [
+      "homme en blanc avec barbe11skin2blonde0.svg",
+      "file3.svg",
+      "file4.svg"
+    ],
+    "filterStyles": {
+      "stylization": 4.3,
+      "cleanliness": 6.3,
+      "brushScale": 2.0,
+      "microBrush": 5.2,
+      "lightingOn": true,
+      "lightDirection": -60,
+      "specularity": 1.5
+    }
   }
 ]
