@@ -242,13 +242,25 @@ async function getDocumentsToProcess(collection) {
   const totalDocs = await collection.countDocuments();
 
   // Query for documents with non-empty arrays that might contain URLs
+  // Skip documents where:
+  // 1. backgrounds array is empty
+  // 2. name key is not available or name key is empty string
   const queryForUrls = {
-    $or: [
+    $and: [
+      // Ensure name exists and is not empty
+      { name: { $exists: true, $ne: '', $ne: null } },
+      // Ensure backgrounds array is not empty
       { 'backgrounds.0': { $exists: true } },
-      { 'adultMaleVariations.0': { $exists: true } },
-      { 'childMaleVariations.0': { $exists: true } },
-      { 'adultFemaleVariations.0': { $exists: true } },
-      { 'childFemaleVariations.0': { $exists: true } },
+      // At least one of these arrays should have content
+      {
+        $or: [
+          { 'backgrounds.0': { $exists: true } },
+          { 'adultMaleVariations.0': { $exists: true } },
+          { 'childMaleVariations.0': { $exists: true } },
+          { 'adultFemaleVariations.0': { $exists: true } },
+          { 'childFemaleVariations.0': { $exists: true } },
+        ],
+      },
     ],
   };
 
