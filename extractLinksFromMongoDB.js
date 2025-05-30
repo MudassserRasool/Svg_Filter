@@ -33,7 +33,7 @@ function extractHttpsUrls(obj, currentPath = '') {
 
 // Function to ensure output directory exists
 async function ensureOutputDirectory() {
-  const outputDir = './extracted_https_urls';
+  const outputDir = './urls';
   try {
     await fs.access(outputDir);
   } catch (error) {
@@ -52,19 +52,13 @@ async function saveToJsonFile(documentId, httpsUrls, outputDir) {
   const filename = `${documentId}.json`;
   const filepath = path.join(outputDir, filename);
 
-  const dataToSave = {
-    documentId: documentId,
-    extractedAt: new Date().toISOString(),
-    httpsUrls: httpsUrls,
-    totalUrls: Object.keys(httpsUrls).length,
-  };
+  // Extract just the URLs as an array
+  const urlsArray = Object.values(httpsUrls);
 
   try {
-    await fs.writeFile(filepath, JSON.stringify(dataToSave, null, 2));
+    await fs.writeFile(filepath, JSON.stringify(urlsArray, null, 2));
     console.log(
-      `✓ Saved ${
-        Object.keys(httpsUrls).length
-      } HTTPS URLs for document ${documentId}`
+      `✓ Saved ${urlsArray.length} HTTPS URLs for document ${documentId}`
     );
   } catch (error) {
     console.error(
