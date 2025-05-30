@@ -13,7 +13,8 @@ const DOWNLOAD_AMOUNT = {
   FEW: 2,
 };
 
-const NUMBER_OF_DOCUMENTS_TO_EXTRACT_LINKS = DOWNLOAD_AMOUNT.FEW;
+const NUMBER_OF_DOCUMENTS_TO_PROCESS_AND_SAVE_LINKS_ON_THOSE_DOCUMENTS =
+  DOWNLOAD_AMOUNT.FEW;
 
 // Function to recursively extract HTTPS URLs from nested objects
 function extractHttpsUrls(obj, currentPath = '') {
@@ -46,7 +47,7 @@ async function ensureOutputDirectory() {
   } catch (error) {
     if (error.code === 'ENOENT') {
       await fs.mkdir(outputDir);
-      console.log('Created output directory: extracted_https_urls');
+      console.log('Created output directory: urls');
     } else {
       throw error;
     }
@@ -181,7 +182,7 @@ function displayUsage() {
     '- Extract all string values starting with "https" from nested objects'
   );
   console.log('- Save results to separate JSON files named by document _id');
-  console.log('- Create files in "./extracted_https_urls/" directory');
+  console.log('- Create files in "./urls/" directory');
   console.log('');
 }
 
