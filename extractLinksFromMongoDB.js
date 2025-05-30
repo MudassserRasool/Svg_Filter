@@ -30,6 +30,61 @@ const DEBUG_CONFIG = {
 // Central tracking for all links across documents
 let centralLinksList = [];
 
+const replaceFromObject = (ogObj, f) => {
+  function replaceStringInObject(obj) {
+    for (let key in obj) {
+      if (typeof obj[key] === 'string') {
+        obj[key] = f(obj[key]);
+      } else if (Array.isArray(obj[key])) {
+        // If the property is an array, loop through its elements
+        for (let i = 0; i < obj[key].length; i++) {
+          // Check if the array element is a string before replacing
+          if (typeof obj[key][i] === 'string') {
+            obj[key][i] = f(obj[key][i]);
+          } else if (typeof obj[key][i] === 'object') {
+            // If the array element is an object, recursively call the function
+            replaceStringInObject(obj[key][i]);
+          }
+        }
+      } else if (typeof obj[key] === 'object') {
+        // If the property is an object, recursively call the function
+        replaceStringInObject(obj[key]);
+      }
+    }
+  }
+
+  const obj = JSON.parse(JSON.stringify(ogObj));
+  replaceStringInObject(obj);
+  return obj;
+};
+
+const replaceS3 = (d) =>
+  JSON.parse(
+    JSON.stringify(
+      replaceFromObject(d, (str) =>
+        str.includes('.s3')
+          ? str
+              ?.split?.('drivebuddyz')
+              ?.join?.('cactus-s3')
+              ?.split?.('cactus-s3')
+              ?.join?.('cactus-storage-s3')
+              ?.split?.('cactus-s3.s3')
+              ?.join?.('cactus-storage-s3.s3')
+              ?.split?.('.us-east-2')
+              ?.join?.('.eu-west-3')
+          : str
+      )
+    )
+      .split('drivebuddyz.s3.')
+      .join('cactus-s3.s3.')
+      .split('cactus-s3.s3.')
+      .join('cactus-storage-s3.')
+      ?.split?.('cactus-s3.s3')
+      ?.join?.('cactus-storage-s3.s3')
+      ?.split?.('.us-east-2')
+      ?.join?.('.eu-west-3')
+  );
+
 // Enhanced function to recursively extract URLs from nested objects
 function extractHttpsUrls(obj, currentPath = '') {
   const httpsUrls = {};
@@ -364,8 +419,11 @@ async function processProductsCollection() {
         debugDocumentStructure(document, document._id.toString());
       }
 
-      // Extract HTTPS URLs from the document
-      const result = extractHttpsUrls(document);
+      // Apply S3 URL transformations before extracting URLs
+      const transformedDocument = replaceS3(document);
+
+      // Extract HTTPS URLs from the transformed document
+      const result = extractHttpsUrls(transformedDocument);
       const httpsUrls = result.urls;
       const debugInfo = result.debug;
 
