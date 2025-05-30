@@ -1,0 +1,12 @@
+[
+  {
+    "fileName": "file1.svg",
+    "stylization": 100,
+    "cleanliness": 100,
+    "brushScale": 100,
+    "microBrush": 100,
+    "lightingOn": 100,
+    "lightDirection": 100,
+    "specularity": 100
+  }
+]
