@@ -16,7 +16,7 @@ const PROCESSING_SCOPE = {
 
 // Set processing scope and limit
 const SCOPE_CONFIG = {
-  type: PROCESSING_SCOPE.LIMITED, // Change to PROCESSING_SCOPE.ALL to process all documents
+  type: PROCESSING_SCOPE.ALL, // Change to PROCESSING_SCOPE.ALL to process all documents
   limit: 20, // Increased limit to find documents with URLs
 };
 
@@ -328,14 +328,14 @@ async function getDocumentsToProcess(collection) {
     // If looking for URLs specifically, prioritize documents with arrays
     if (docsWithArrays > 0) {
       return {
-        cursor: collection.find(queryForUrls),
+        cursor: collection.find(queryForUrls).sort({ _id: -1 }),
         documentsToProcess: docsWithArrays,
         totalAvailable: totalDocs,
         note: 'Prioritizing documents with non-empty arrays',
       };
     } else {
       return {
-        cursor: collection.find({}),
+        cursor: collection.find({}).sort({ _id: -1 }),
         documentsToProcess: totalDocs,
         totalAvailable: totalDocs,
         note: 'No documents with arrays found, processing all',
@@ -352,14 +352,17 @@ async function getDocumentsToProcess(collection) {
     if (docsWithArrays > 0) {
       const arrayLimit = Math.min(limitedCount, docsWithArrays);
       return {
-        cursor: collection.find(queryForUrls).limit(arrayLimit),
+        cursor: collection
+          .find(queryForUrls)
+          .sort({ _id: -1 })
+          .limit(arrayLimit),
         documentsToProcess: arrayLimit,
         totalAvailable: totalDocs,
         note: `Prioritizing ${arrayLimit} documents with non-empty arrays`,
       };
     } else {
       return {
-        cursor: collection.find({}).limit(limitedCount),
+        cursor: collection.find({}).sort({ _id: -1 }).limit(limitedCount),
         documentsToProcess: limitedCount,
         totalAvailable: totalDocs,
         note: 'No documents with arrays found, using random selection',

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const getAllUrlsOfAllFiles = require('./getAllUrls');
 
 // Create download directory if it doesn't exist
 const downloadDir = './svgs';
@@ -9,10 +10,10 @@ if (!fs.existsSync(downloadDir)) {
 }
 
 // Read the images links JSON file
-const imageLinksData = JSON.parse(fs.readFileSync('images_links.json', 'utf8'));
+// const imageLinksData = JSON.parse(fs.readFileSync('images_links.json', 'utf8'));
 
 // Use all URLs (no filtering by file type)
-const fileUrls = imageLinksData;
+const fileUrls = getAllUrlsOfAllFiles;
 
 console.log(`Found ${fileUrls.length} files to download.`);
 
