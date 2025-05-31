@@ -34,18 +34,14 @@ console.log('='.repeat(50));
 // Graceful shutdown handler
 process.on('SIGINT', () => {
   console.log('\n⚠️  Received interruption signal. Saving progress...');
-  console.log(
-    `💾 Progress saved: ${state.downloadCount} downloaded, ${state.failedCount} failed`
-  );
+  saveState();
   console.log('🔄 Run the script again to resume from this point.');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n⚠️  Received termination signal. Saving progress...');
-  console.log(
-    `💾 Progress saved: ${state.downloadCount} downloaded, ${state.failedCount} failed`
-  );
+  saveState();
   console.log('🔄 Run the script again to resume from this point.');
   process.exit(0);
 });
@@ -166,9 +162,21 @@ function downloadFile(urlObj, filename) {
   });
 }
 
+// Function to save state to config.json
+function saveState() {
+  try {
+    fs.writeFileSync('./config.json', JSON.stringify(state, null, 2));
+    console.log(
+      `💾 Progress saved: ${state.downloadCount} downloaded, ${state.failedCount} failed`
+    );
+  } catch (error) {
+    console.error('❌ Failed to save progress:', error.message);
+  }
+}
+
 // Download all files with concurrency control
 async function downloadAllFiles() {
-  const maxConcurrentDownloads = 5000; // Limit concurrent downloads to avoid overwhelming the server
+  const maxConcurrentDownloads = 10; // Limit concurrent downloads to avoid overwhelming the server
   const initialDownloadCount = state.downloadCount;
   const initialFailedCount = state.failedCount;
 
@@ -194,6 +202,9 @@ async function downloadAllFiles() {
     });
 
     await Promise.all(promises);
+
+    // Save progress after each batch
+    saveState();
 
     // Show progress
     const processed = Math.min(i + maxConcurrentDownloads, fileUrls.length);
@@ -222,8 +233,9 @@ async function downloadAllFiles() {
   console.log(`📁 Files saved in: ${baseDownloadDir}/[id]/characters/`);
 
   // Save final state
+  saveState();
   console.log(
-    '💾 Progress saved. Script can be safely restarted to resume from this point.'
+    '💾 Final progress saved. Script can be safely restarted to resume from this point.'
   );
 }
 
