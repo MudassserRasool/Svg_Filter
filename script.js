@@ -168,7 +168,7 @@ function downloadFile(urlObj, filename) {
 
 // Download all files with concurrency control
 async function downloadAllFiles() {
-  const maxConcurrentDownloads = 1000; // Limit concurrent downloads to avoid overwhelming the server
+  const maxConcurrentDownloads = 5000; // Limit concurrent downloads to avoid overwhelming the server
   const initialDownloadCount = state.downloadCount;
   const initialFailedCount = state.failedCount;
 
