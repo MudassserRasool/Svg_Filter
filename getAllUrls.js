@@ -3,7 +3,8 @@ const path = require('path');
 
 /**
  * Reads all JSON files from the urls folder and merges their arrays into one array
- * @returns {Array} Combined array of all URLs from all files
+ * Each URL object includes the original URL and the ID from the filename
+ * @returns {Array} Combined array of all URLs with their corresponding IDs
  */
 function getAllUrls() {
   try {
@@ -38,12 +39,21 @@ function getAllUrls() {
         const filePath = path.join(urlsDir, file);
         const fileContent = fs.readFileSync(filePath, 'utf8');
 
+        // Extract ID from filename (remove .json extension)
+        const id = path.basename(file, '.json');
+
         // Parse JSON content
         const urlArray = JSON.parse(fileContent);
 
         // Validate that it's an array
         if (Array.isArray(urlArray)) {
-          allUrls.push(...urlArray);
+          // Add each URL with its corresponding ID
+          urlArray.forEach((url) => {
+            allUrls.push({
+              url: url,
+              id: id,
+            });
+          });
           processedFiles++;
         } else {
           console.warn(`File ${file} does not contain an array, skipping...`);
@@ -70,7 +80,7 @@ function getAllUrls() {
 
 /**
  * Async version of getAllUrls function for better performance with large files
- * @returns {Promise<Array>} Combined array of all URLs from all files
+ * @returns {Promise<Array>} Combined array of all URLs with their corresponding IDs
  */
 async function getAllUrlsAsync() {
   try {
@@ -105,12 +115,19 @@ async function getAllUrlsAsync() {
         const filePath = path.join(urlsDir, file);
         const fileContent = await fs.promises.readFile(filePath, 'utf8');
 
+        // Extract ID from filename (remove .json extension)
+        const id = path.basename(file, '.json');
+
         // Parse JSON content
         const urlArray = JSON.parse(fileContent);
 
         // Validate that it's an array
         if (Array.isArray(urlArray)) {
-          return { success: true, urls: urlArray, file };
+          const urlsWithId = urlArray.map((url) => ({
+            url: url,
+            id: id,
+          }));
+          return { success: true, urls: urlsWithId, file };
         } else {
           console.warn(`File ${file} does not contain an array, skipping...`);
           return { success: false, file };
@@ -148,12 +165,20 @@ async function getAllUrlsAsync() {
 }
 
 /**
- * Get unique URLs only (removes duplicates)
- * @returns {Array} Array of unique URLs
+ * Get unique URLs only (removes duplicates) while preserving ID information
+ * @returns {Array} Array of unique URL objects with IDs
  */
 function getUniqueUrls() {
   const allUrls = getAllUrls();
-  const uniqueUrls = [...new Set(allUrls)];
+  const seen = new Set();
+  const uniqueUrls = [];
+
+  allUrls.forEach((urlObj) => {
+    if (!seen.has(urlObj.url)) {
+      seen.add(urlObj.url);
+      uniqueUrls.push(urlObj);
+    }
+  });
 
   console.log(`Total URLs: ${allUrls.length}`);
   console.log(`Unique URLs: ${uniqueUrls.length}`);
@@ -164,11 +189,19 @@ function getUniqueUrls() {
 
 /**
  * Async version of getUniqueUrls
- * @returns {Promise<Array>} Array of unique URLs
+ * @returns {Promise<Array>} Array of unique URL objects with IDs
  */
 async function getUniqueUrlsAsync() {
   const allUrls = await getAllUrlsAsync();
-  const uniqueUrls = [...new Set(allUrls)];
+  const seen = new Set();
+  const uniqueUrls = [];
+
+  allUrls.forEach((urlObj) => {
+    if (!seen.has(urlObj.url)) {
+      seen.add(urlObj.url);
+      uniqueUrls.push(urlObj);
+    }
+  });
 
   console.log(`Total URLs: ${allUrls.length}`);
   console.log(`Unique URLs: ${uniqueUrls.length}`);

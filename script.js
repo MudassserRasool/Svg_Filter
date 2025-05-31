@@ -3,16 +3,13 @@ const path = require('path');
 const https = require('https');
 const getAllUrlsOfAllFiles = require('./getAllUrls');
 
-// Create download directory if it doesn't exist
-const downloadDir = './svgs';
-if (!fs.existsSync(downloadDir)) {
-  fs.mkdirSync(downloadDir, { recursive: true });
+// Create base download directory if it doesn't exist
+const baseDownloadDir = './svgs';
+if (!fs.existsSync(baseDownloadDir)) {
+  fs.mkdirSync(baseDownloadDir, { recursive: true });
 }
 
-// Read the images links JSON file
-// const imageLinksData = JSON.parse(fs.readFileSync('images_links.json', 'utf8'));
-
-// Use all URLs (no filtering by file type)
+// Use all URLs with their IDs
 const fileUrls = getAllUrlsOfAllFiles;
 
 console.log(`Found ${fileUrls.length} files to download.`);
@@ -53,13 +50,33 @@ function getFilenameFromUrl(url) {
   return filename;
 }
 
+// Function to create directory structure for an ID
+function createDirectoryStructure(id) {
+  const idDir = path.join(baseDownloadDir, id);
+  const charactersDir = path.join(idDir, 'characters');
+
+  if (!fs.existsSync(idDir)) {
+    fs.mkdirSync(idDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(charactersDir)) {
+    fs.mkdirSync(charactersDir, { recursive: true });
+  }
+
+  return charactersDir;
+}
+
 // Function to download a file
-function downloadFile(url, filename) {
+function downloadFile(urlObj, filename) {
   return new Promise((resolve, reject) => {
-    const filePath = path.join(downloadDir, filename);
+    const { url, id } = urlObj;
+
+    // Create the directory structure and get the characters folder path
+    const charactersDir = createDirectoryStructure(id);
+    const filePath = path.join(charactersDir, filename);
     const file = fs.createWriteStream(filePath);
 
-    console.log(`Downloading: ${filename}`);
+    console.log(`Downloading: ${filename} to ${id}/characters/`);
 
     https
       .get(url, (response) => {
@@ -67,7 +84,7 @@ function downloadFile(url, filename) {
           response.pipe(file);
           file.on('finish', () => {
             file.close();
-            console.log(`✓ Downloaded: ${filename}`);
+            console.log(`✓ Downloaded: ${id}/characters/${filename}`);
             resolve(filename);
           });
         } else {
@@ -99,13 +116,13 @@ async function downloadAllFiles() {
 
   for (let i = 0; i < fileUrls.length; i += maxConcurrentDownloads) {
     const batch = fileUrls.slice(i, i + maxConcurrentDownloads);
-    const promises = batch.map(async (url) => {
+    const promises = batch.map(async (urlObj) => {
       try {
-        const filename = getFilenameFromUrl(url);
-        await downloadFile(url, filename);
+        const filename = getFilenameFromUrl(urlObj.url);
+        await downloadFile(urlObj, filename);
         downloadedCount++;
       } catch (error) {
-        console.error(`✗ Failed to download: ${url}`);
+        console.error(`✗ Failed to download: ${urlObj.url}`);
         console.error(`  Error: ${error.message}`);
         failedCount++;
       }
@@ -122,7 +139,7 @@ async function downloadAllFiles() {
   console.log(`Download completed!`);
   console.log(`✓ Successfully downloaded: ${downloadedCount} files`);
   console.log(`✗ Failed downloads: ${failedCount} files`);
-  console.log(`📁 Files saved in: ${downloadDir}`);
+  console.log(`📁 Files saved in: ${baseDownloadDir}/[id]/characters/`);
 }
 
 // Start the download process
