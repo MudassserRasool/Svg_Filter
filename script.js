@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const getAllUrlsOfAllFiles = require('./getAllUrls');
+const state = require('./config');
 
 // Create base download directory if it doesn't exist
 const baseDownloadDir = './svgs';
@@ -10,9 +11,44 @@ if (!fs.existsSync(baseDownloadDir)) {
 }
 
 // Use all URLs with their IDs
-const fileUrls = getAllUrlsOfAllFiles;
+const fileUrls = getAllUrlsOfAllFiles.slice(state.downloadCount);
 
-console.log(`Found ${fileUrls.length} files to download.`);
+console.log('🚀 SVG Download Script Started');
+console.log('='.repeat(50));
+console.log(
+  `📊 Current Progress: ${state.downloadCount} downloaded, ${state.failedCount} failed`
+);
+console.log(`📋 Total files available: ${getAllUrlsOfAllFiles.length}`);
+console.log(`⏳ Files remaining to download: ${fileUrls.length}`);
+
+if (fileUrls.length === 0) {
+  console.log('✅ All files have been downloaded!');
+  process.exit(0);
+}
+
+console.log(
+  `🔄 ${state.downloadCount > 0 ? 'Resuming' : 'Starting'} download...`
+);
+console.log('='.repeat(50));
+
+// Graceful shutdown handler
+process.on('SIGINT', () => {
+  console.log('\n⚠️  Received interruption signal. Saving progress...');
+  console.log(
+    `💾 Progress saved: ${state.downloadCount} downloaded, ${state.failedCount} failed`
+  );
+  console.log('🔄 Run the script again to resume from this point.');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n⚠️  Received termination signal. Saving progress...');
+  console.log(
+    `💾 Progress saved: ${state.downloadCount} downloaded, ${state.failedCount} failed`
+  );
+  console.log('🔄 Run the script again to resume from this point.');
+  process.exit(0);
+});
 
 // Function to extract filename from URL
 function getFilenameFromUrl(url) {
@@ -74,44 +110,70 @@ function downloadFile(urlObj, filename) {
     // Create the directory structure and get the characters folder path
     const charactersDir = createDirectoryStructure(id);
     const filePath = path.join(charactersDir, filename);
+
+    // Check if file already exists
+    if (fs.existsSync(filePath)) {
+      console.log(`⏭️  Skipping existing file: ${id}/characters/${filename}`);
+      resolve(filename);
+      return;
+    }
+
     const file = fs.createWriteStream(filePath);
 
-    console.log(`Downloading: ${filename} to ${id}/characters/`);
+    console.log(`⬇️  Downloading: ${filename} to ${id}/characters/`);
 
-    https
-      .get(url, (response) => {
-        if (response.statusCode === 200) {
-          response.pipe(file);
-          file.on('finish', () => {
-            file.close();
-            console.log(`✓ Downloaded: ${id}/characters/${filename}`);
-            resolve(filename);
-          });
-        } else {
+    const request = https.get(url, (response) => {
+      if (response.statusCode === 200) {
+        response.pipe(file);
+        file.on('finish', () => {
           file.close();
-          fs.unlink(filePath, () => {}); // Delete the file if download failed
-          reject(
-            new Error(
-              `Failed to download ${filename}: HTTP ${response.statusCode}`
-            )
-          );
-        }
-      })
-      .on('error', (err) => {
+          resolve(filename);
+        });
+        file.on('error', (err) => {
+          file.close();
+          fs.unlink(filePath, () => {}); // Delete the incomplete file
+          reject(new Error(`File write error: ${err.message}`));
+        });
+      } else if (response.statusCode === 302 || response.statusCode === 301) {
+        // Handle redirects
+        file.close();
+        fs.unlink(filePath, () => {});
+        reject(new Error(`Redirect not handled: HTTP ${response.statusCode}`));
+      } else {
         file.close();
         fs.unlink(filePath, () => {}); // Delete the file if download failed
-        reject(err);
-      });
+        reject(
+          new Error(
+            `Failed to download ${filename}: HTTP ${response.statusCode}`
+          )
+        );
+      }
+    });
+
+    request.on('error', (err) => {
+      file.close();
+      fs.unlink(filePath, () => {}); // Delete the file if download failed
+      reject(new Error(`Network error: ${err.message}`));
+    });
+
+    // Set a timeout for the request
+    request.setTimeout(30000, () => {
+      request.destroy();
+      file.close();
+      fs.unlink(filePath, () => {});
+      reject(new Error(`Download timeout for ${filename}`));
+    });
   });
 }
 
 // Download all files with concurrency control
 async function downloadAllFiles() {
   const maxConcurrentDownloads = 5; // Limit concurrent downloads to avoid overwhelming the server
-  let downloadedCount = 0;
-  let failedCount = 0;
+  const initialDownloadCount = state.downloadCount;
+  const initialFailedCount = state.failedCount;
 
   console.log(`Starting download of ${fileUrls.length} files...`);
+  console.log(`Resuming from download #${initialDownloadCount + 1}`);
   console.log('='.repeat(50));
 
   for (let i = 0; i < fileUrls.length; i += maxConcurrentDownloads) {
@@ -120,11 +182,14 @@ async function downloadAllFiles() {
       try {
         const filename = getFilenameFromUrl(urlObj.url);
         await downloadFile(urlObj, filename);
-        downloadedCount++;
+        state.downloadCount++;
+        console.log(
+          `✓ Downloaded: ${urlObj.id}/characters/${filename} (Total: ${state.downloadCount})`
+        );
       } catch (error) {
         console.error(`✗ Failed to download: ${urlObj.url}`);
         console.error(`  Error: ${error.message}`);
-        failedCount++;
+        state.failedCount++;
       }
     });
 
@@ -132,14 +197,34 @@ async function downloadAllFiles() {
 
     // Show progress
     const processed = Math.min(i + maxConcurrentDownloads, fileUrls.length);
-    console.log(`Progress: ${processed}/${fileUrls.length} files processed`);
+    const totalProcessed = initialDownloadCount + processed;
+    console.log(
+      `Progress: ${processed}/${fileUrls.length} files processed in this session`
+    );
+    console.log(
+      `Overall Progress: ${state.downloadCount} successful, ${state.failedCount} failed`
+    );
   }
 
   console.log('='.repeat(50));
-  console.log(`Download completed!`);
-  console.log(`✓ Successfully downloaded: ${downloadedCount} files`);
-  console.log(`✗ Failed downloads: ${failedCount} files`);
+  console.log(`Download session completed!`);
+  console.log(
+    `✓ Successfully downloaded in this session: ${
+      state.downloadCount - initialDownloadCount
+    } files`
+  );
+  console.log(
+    `✗ Failed in this session: ${state.failedCount - initialFailedCount} files`
+  );
+  console.log(
+    `📊 Total Progress: ${state.downloadCount} successful, ${state.failedCount} failed`
+  );
   console.log(`📁 Files saved in: ${baseDownloadDir}/[id]/characters/`);
+
+  // Save final state
+  console.log(
+    '💾 Progress saved. Script can be safely restarted to resume from this point.'
+  );
 }
 
 // Start the download process
